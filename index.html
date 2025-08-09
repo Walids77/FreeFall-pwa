@@ -6,7 +6,54 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Free Fall Animation with PNG</title>
 <style>
-body {
+<button id="installBtn" style="
+  position:fixed; left:16px; right:16px; bottom:16px; 
+  padding:14px 16px; font-size:16px; border:none; border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15); display:none; 
+  background:#0b8f7a; color:#fff; z-index:9999;">
+  Install app
+</button>
+  <script>
+  // Show “Install” button when the PWA is installable (Android/Chrome)
+  let deferredPrompt = null;
+
+  // Hide button if already running as an installed app
+  function hideIfInstalled() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) document.getElementById('installBtn').style.display = 'none';
+  }
+  hideIfInstalled();
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();                 // stop Chrome’s mini-infobar
+    deferredPrompt = e;
+    const btn = document.getElementById('installBtn');
+    btn.style.display = 'block';
+    btn.onclick = async () => {
+      btn.disabled = true;
+      await deferredPrompt.prompt();    // show the install prompt
+      await deferredPrompt.userChoice;  // wait for user choice
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    };
+  });
+
+  // iPhone tip (no event on iOS): show a tiny hint once for Safari users
+  (function showIosHintOnce(){
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(ua);
+    const isStandalone = window.navigator.standalone;
+    if (isIOS && !isStandalone && !localStorage.getItem('iosA2HS_shown')) {
+      const hint = document.createElement('div');
+      hint.innerHTML = 'To install: tap <b>Share</b> → <b>Add to Home Screen</b>';
+      hint.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.08);font-size:14px;z-index:9998;text-align:center;';
+      document.body.appendChild(hint);
+      setTimeout(()=>hint.remove(), 6000);
+      localStorage.setItem('iosA2HS_shown','1');
+    }
+  })();
+</script>
+  body {
   font-family: sans-serif; max-width: 500px; margin: auto;
   padding: 20px; background: linear-gradient(to bottom, #e0f7fa, #ffffff);
   color: #333;
