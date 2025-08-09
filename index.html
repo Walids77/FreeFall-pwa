@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Free Fall Animation with PNG</title>
+<style>
+body {
+  font-family: sans-serif; max-width: 500px; margin: auto;
+  padding: 20px; background: linear-gradient(to bottom, #e0f7fa, #ffffff);
+  color: #333;
+}
+h2 { text-align: center; color: #00796b; }
+input, select, button {
+  width: 100%; padding: 10px; margin-top: 8px;
+  font-size: 1rem; border-radius: 5px; border: 1px solid #ccc;
+}
+button { background: #00796b; color: white; border: none; cursor: pointer; }
+button:hover { background: #004d40; }
+#result, #energyResult, #vtResult {
+  text-align: center; font-weight: bold; margin-top: 10px; color: green;
+}
+.diagram {
+  position: relative; width: 100%; height: 300px;
+  background: linear-gradient(to bottom, #fff 95%, #795548 5%);
+  border-left: 2px dashed #795548; overflow: hidden; margin-top: 20px;
+}
+.diagram img, .speedTag, .scale, .countdown {
+  position: absolute;
+}
+.plane { top: 5px; left: 40px; width: 32px; z-index: 3; }
+.rock { top: 0; left: 50px; width: 24px; z-index: 4; }
+.explosion { bottom: 0; left: 45px; width: 48px; display: none; z-index: 5; }
+.speedTag {
+  top: 0; left: 80px; font-size: 12px;
+  background: rgba(0,0,0,0.6); color: white; padding: 2px 4px;
+  border-radius: 4px; z-index: 4;
+}
+.scale {
+  right: 5px; top: 0; font-size: 10px; color: #333;
+  display: flex; flex-direction: column; justify-content: space-between;
+  height: 100%; z-index: 2;
+}
+.countdown {
+  top: 5px; right: 5px; background: rgba(0,0,0,0.6);
+  color: white; padding: 3px 6px; font-size: 12px;
+  border-radius: 4px; z-index: 4;
+}
+.terminalVelocity { color: red; font-weight: bold; margin-left: 4px; animation: blink 1s infinite; }
+@keyframes blink { 0%,50%,100%{opacity:1;} 25%,75%{opacity:0;} }
+</style>
+<link href="manifest.webmanifest" rel="manifest"/><meta content="#00796b" name="theme-color"/><meta content="yes" name="apple-mobile-web-app-capable"/><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/><link href="icons/icon-192.png" rel="apple-touch-icon"/></head>
+<body>
+<h2>Free Fall Calculator (PNG Icons)</h2>
+<select id="materialSelect">
+<option value="rock">Rock</option><option value="iron">Iron</option>
+<option value="steel">Steel</option><option value="gold">Gold</option>
+<option value="titanium">Titanium</option><option value="aluminum">Aluminum</option>
+<option value="silver">Silver</option><option value="copper">Copper</option>
+<option value="nickel">Nickel</option><option value="tungsten">Tungsten</option>
+</select>
+<input id="weightInput" placeholder="Weight in kg, e.g., 10" step="0.1" type="number"/>
+<input id="heightInput" placeholder="Height in meters, e.g., 1500" step="10" type="number"/>
+<button onclick="startFall()">Calculate &amp; Animate</button>
+<div id="vtResult"></div><div id="result"></div>
+<div class="diagram">
+<img class="plane" src="https://img.icons8.com/emoji/48/airplane-emoji.png"/>
+<img class="rock" id="rock" src="https://img.icons8.com/emoji/48/black-circle-emoji.png"/>
+<div class="speedTag" id="speedTag">0 km/h</div>
+<div class="scale" id="scale"></div>
+<div class="countdown" id="countdown">0.00 s</div>
+<img class="explosion" id="explosion" src="https://img.icons8.com/emoji/48/collision-emoji.png"/>
+</div>
+<div id="energyResult"></div>
+<script>
+function startFall(){
+  const densities={rock:2600,iron:7870,steel:8050,gold:19300,
+    titanium:4500,aluminum:2700,silver:10490,copper:8960,nickel:8900,tungsten:19300};
+  const m=document.getElementById('materialSelect').value;
+  const density=densities[m];
+  const w=parseFloat(document.getElementById('weightInput').value);
+  const h=parseFloat(document.getElementById('heightInput').value);
+  const rock=document.getElementById('rock');
+  const speedTag=document.getElementById('speedTag');
+  const scale=document.getElementById('scale');
+  const countdown=document.getElementById('countdown');
+  const explosion=document.getElementById('explosion');
+  const vtResult=document.getElementById('vtResult');
+  const energyResult=document.getElementById('energyResult');
+
+  rock.style.top='0px'; speedTag.style.top='0px';
+  speedTag.innerHTML="0 km/h"; scale.innerHTML="";
+  explosion.style.display="none"; vtResult.innerHTML="";
+  document.getElementById('result').innerHTML=""; energyResult.innerHTML="";
+
+  if(isNaN(w)||w<=0||isNaN(h)||h<=0){
+    document.getElementById('result').innerText=" Enter valid weight & height.";
+    return;
+  }
+
+  const g=9.8,Cd=0.47,rho=1.2;
+  const volume=w/density;
+  const r=Math.cbrt((3*volume)/(4*Math.PI));
+  const A=Math.PI*r*r;
+  const Vt=Math.sqrt((2*w*g)/(rho*A*Cd));
+  vtResult.innerHTML=" Terminal velocity  "+(Vt*3.6).toFixed(1)+" km/h";
+
+  const t1=Vt/g,d1=0.5*g*t1*t1;
+  let fallTime,finalSpeed,canReachVt=d1<h;
+  if(canReachVt){
+    const d2=h-d1,t2=d2/Vt;
+    fallTime=t1+t2; finalSpeed=Vt;
+  }else{
+    fallTime=Math.sqrt(2*h/g); finalSpeed=g*fallTime;
+  }
+  document.getElementById('result').innerText=" Fall time  "+fallTime.toFixed(2)+" s.";
+
+  const diagram=document.querySelector('.diagram');
+  const maxTop=diagram.clientHeight-24;
+  const step=h/5;
+  for(let i=0;i<=5;i++){
+    const lbl=document.createElement('div');
+    lbl.innerText=Math.round(h-i*step)+" m";
+    scale.appendChild(lbl);
+  }
+
+  const start=Date.now();
+  const loop=setInterval(()=>{
+    const t=(Date.now()-start)/1000;
+    let y,speed;
+    if(canReachVt){
+      if(t<t1){y=0.5*g*t*t; speed=t*g;}
+      else{y=d1+Vt*(t-t1); speed=Vt;}
+    }else{y=0.5*g*t*t; speed=t*g;}
+    if(y>h) y=h;
+    const topPx=(y/h)*maxTop;
+    rock.style.top=topPx+"px"; speedTag.style.top=topPx+"px";
+    let label=(speed>=Vt-0.1&&canReachVt)?' <span class="terminalVelocity">TERMINAL VELOCITY</span>':"";
+    speedTag.innerHTML=Math.round(speed*3.6)+" km/h"+label;
+    countdown.textContent=Math.max(fallTime - t,0).toFixed(2)+" s";
+    if(t>=fallTime){
+      clearInterval(loop);
+      speedTag.innerHTML=Math.round(finalSpeed*3.6)+" km/h";
+      countdown.textContent="0.00 s";
+      explosion.style.display="block";
+      const E=0.5*w*finalSpeed*finalSpeed;
+      const grams=E/4184;
+      energyResult.innerHTML=" Impact energy  "+grams.toFixed(2)+" grams TNT";
+      setTimeout(()=>explosion.style.display="none",800);
+    }
+  },20);
+}
+</script>
+<script>if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js');
+  });
+}</script></body>
+</html>
